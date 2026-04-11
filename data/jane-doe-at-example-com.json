@@ -1,0 +1,9 @@
+{
+  "certificate_id": "jane-doe-at-example-com",
+  "name": "Jane Doe",
+  "email": "jane.doe@example.com",
+  "workshop": "Your Workshop Title Here",
+  "date": "April 5, 2026",
+  "date_iso": "2026-04-05",
+  "description": "Completed an intensive hands-on workshop covering the core skills and tools relevant to this event."
+}

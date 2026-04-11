@@ -1,0 +1,60 @@
+{
+  "_readme": "Edit the fields below to brand this template for your organisation. See SETUP.md for a full walkthrough.",
+
+  "site_title": "Workshop Certificates — Your Organisation Name",
+  "org_name": "Your Organisation Name",
+  "org_logo": "assets/img/logo.png",
+  "org_tagline": "Your organisation tagline here",
+  "org_website": "https://your-github-username.github.io/certificate-generator/",
+
+  "certificate": {
+    "heading_label": "Certificate of Completion",
+    "pre_name_text": "This is to certify that",
+    "post_name_text": "has successfully completed the workshop",
+    "footer_left_label": "Date",
+    "footer_right_label": "Authorized By",
+    "authorized_by": "Organizer Name",
+    "signature_image": "assets/img/signature.png",
+    "seal_image": "assets/img/seal.png",
+    "seal_label": "Verified Credential",
+    "show_qr": true,
+    "show_description": true,
+    "show_seal": true,
+
+    "primary_color": "#1a2e4a",
+    "accent_color": "#c8a951",
+    "background_color": "#ffffff",
+    "text_color": "#333333",
+    "muted_color": "#777777",
+    "border_color": "#c8a951",
+    "border_width": "7px",
+
+    "font_heading": "'Playfair Display', Georgia, serif",
+    "font_body": "'Lato', 'Helvetica Neue', sans-serif"
+  },
+
+  "search_page": {
+    "headline": "Find Your Certificate",
+    "subtext": "Enter the email address you registered with to view and download your certificate.",
+    "input_placeholder": "your@email.com",
+    "button_text": "Find My Certificate",
+    "footer_note": "Can't find yours? Contact the organizer."
+  },
+
+  "pdf": {
+    "filename_prefix": "certificate",
+    "format": "a4",
+    "orientation": "landscape",
+    "margin": 0
+  },
+
+  "seo": {
+    "default_og_image": "assets/img/og-default.jpg",
+    "twitter_handle": "@YourTwitterHandle"
+  },
+
+  "meta": {
+    "template_version": "2.0",
+    "template_source": "https://github.com/srisatyalokesh/certificate-generator"
+  }
+}

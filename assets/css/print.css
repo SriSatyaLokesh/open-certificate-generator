@@ -1,0 +1,84 @@
+/* ============================================================
+   Workshop Certificate Generator — Print / PDF Styles
+   Applied only during print or pdf generation
+   ============================================================ */
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  body {
+    margin: 0;
+    background: white;
+  }
+
+  /* Reset backdrop */
+  #certificate-view {
+    background: white !important;
+    padding: 0;
+  }
+
+  /* Hide all views except certificate */
+  .view {
+    display: none !important;
+  }
+
+  /* Reveal certificate view only */
+  #certificate-view {
+    display: flex !important;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  /* Strip floating button and any no-print elements */
+  .no-print,
+  .btn-download {
+    display: none !important;
+  }
+
+  .certificate-wrapper {
+    padding: 0;
+    max-width: none;
+    filter: none;
+    container-type: inline-size;
+  }
+
+  /* Exact physical A4 landscape dimensions for crisp PDF output */
+  .certificate {
+    width: 297mm;
+    height: 210mm;
+    aspect-ratio: auto;
+    padding: 12mm 18mm 12mm;
+    box-shadow: none;
+    outline: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Navy for print — gold has poor CMYK conversion on most printers */
+  .cert-name {
+    color: var(--cert-primary);
+  }
+
+  /* QR code must be sharp for scanning printed certificates */
+  .cert-qr canvas,
+  .cert-qr img {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Inner border at exact mm offset for print */
+  .certificate::after {
+    content: '';
+    position: absolute;
+    top: 8mm;
+    left: 8mm;
+    right: 8mm;
+    bottom: 8mm;
+    border: 0.4pt solid rgba(200, 169, 81, 0.5);
+    pointer-events: none;
+  }
+}
