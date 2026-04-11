@@ -32,6 +32,7 @@ async function init() {
       const config = await fetchConfig();
       applyConfigColors(config);
       renderSearchView(config);
+      injectSearchSEOTags(config);
       injectOrgJSONLD(config);
       showView('search-view');
     }
@@ -169,6 +170,35 @@ function renderSearchView(config) {
   if (input) input.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') handleSearch();
   });
+}
+
+function injectSearchSEOTags(config) {
+  var seo = config.seo || {};
+  var pageUrl = window.location.origin + window.location.pathname;
+  var title = seo.home_title || config.site_title || 'Free Certificate Generator | Open Certificate Generator';
+  var description = seo.home_description
+    || 'Create and share verifiable certificates online for free with no backend and no signup.';
+  var image = seo.default_og_image
+    ? new URL(seo.default_og_image, window.location.origin).href
+    : (config.org_logo ? new URL(config.org_logo, window.location.origin).href : '');
+
+  var canonical = document.getElementById('canonical-tag');
+  if (canonical) canonical.setAttribute('href', pageUrl);
+
+  document.title = title;
+  var metaDesc = document.querySelector('meta[name="description"]');
+  if (metaDesc) metaDesc.setAttribute('content', description);
+
+  setTagContent('og-title', title);
+  setTagContent('og-description', description);
+  setTagContent('og-url', pageUrl);
+  setTagContent('og-image', image);
+  setTagContent('og-site-name', config.org_name || 'Open Certificate Generator');
+
+  setTagContent('tw-title', title);
+  setTagContent('tw-description', description);
+  setTagContent('tw-image', image);
+  setTagContent('tw-site', seo.twitter_handle || '');
 }
 
 function handleSearch() {

@@ -1,8 +1,8 @@
 <div align="center">
 
-# Certificate Generator
+# Open Certificate Generator
 
-**A free, fully static GitHub Pages template for issuing verifiable workshop certificates**
+**A free online certificate generator on GitHub Pages for issuing verifiable certificates**
 
 [![Use this template](https://img.shields.io/badge/Use%20this%20template-2ea44f?style=flat-square&logo=github)](https://github.com/new?template_name=certificate-generator&template_owner=srisatyalokesh)
 [![GitHub Stars](https://img.shields.io/github/stars/srisatyalokesh/certificate-generator?style=flat-square&logo=github&label=Stars)](https://github.com/srisatyalokesh/certificate-generator/stargazers)
