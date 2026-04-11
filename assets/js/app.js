@@ -24,7 +24,7 @@ async function init() {
       renderCertificateView(config, attendee);
       injectSEOTags(config, attendee);
       injectJSONLD(config, attendee);
-      generateQRCode(window.location.href, config);
+      generateQRCode(config);
       wirePDFButton(config, attendee.certificate_id);
       showView('certificate-view');
     } else {
@@ -253,7 +253,7 @@ function renderCertificateView(config, attendee) {
 
 // ─── QR Code ──────────────────────────────────────────────────────────────────
 
-function generateQRCode(url, config) {
+function generateQRCode(config) {
   var c = config.certificate;
   if (c.show_qr === false) return;
 
@@ -290,6 +290,12 @@ function wirePDFButton(config, certId) {
   var originalHTML = btn.innerHTML;
   var pdf          = config.pdf || {};
 
+  function restoreButton(noPrintNodes) {
+    noPrintNodes.forEach(function(el) { el.classList.remove('invisible'); });
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+  }
+
   btn.addEventListener('click', function() {
     if (typeof html2pdf === 'undefined') {
       alert('PDF library is still loading. Please try again in a moment.');
@@ -314,11 +320,17 @@ function wirePDFButton(config, certId) {
       }
     };
 
-    html2pdf().set(opt).from(element).save().then(function() {
-      noPrint.forEach(function(el) { el.classList.remove('invisible'); });
-      btn.disabled  = false;
-      btn.innerHTML = originalHTML;
-    });
+    html2pdf()
+      .set(opt)
+      .from(element)
+      .save()
+      .catch(function(err) {
+        console.error('[PDF] generation failed:', err);
+        alert('Failed to generate PDF. Please try again.');
+      })
+      .finally(function() {
+        restoreButton(noPrint);
+      });
   });
 }
 
@@ -422,7 +434,7 @@ function showError(id) {
   if (retryBtn) {
     retryBtn.addEventListener('click', function() {
       window.location.href = './';
-    });
+    }, { once: true });
   }
 
   showView('error-view');
@@ -452,7 +464,15 @@ function setTagContent(id, value) {
 function setImageGraceful(id, src) {
   var el = document.getElementById(id);
   if (!el) return;
-  if (!src) { el.classList.add('hidden'); return; }
+
+  if (!src) {
+    el.classList.add('hidden');
+    el.removeAttribute('src');
+    return;
+  }
+
+  el.classList.remove('hidden');
+  el.onload = function() { this.classList.remove('hidden'); };
   el.onerror = function() { this.classList.add('hidden'); };
   el.src = src;
 }
