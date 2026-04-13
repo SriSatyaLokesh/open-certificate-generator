@@ -58,11 +58,6 @@
     print-color-adjust: exact;
   }
 
-  /* Navy for print — gold has poor CMYK conversion on most printers */
-  .cert-name {
-    color: var(--cert-primary);
-  }
-
   /* QR code must be sharp for scanning printed certificates */
   .cert-qr canvas,
   .cert-qr img {

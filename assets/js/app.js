@@ -313,6 +313,191 @@ function generateQRCode(config) {
 
 // ─── PDF Download ─────────────────────────────────────────────────────────────
 
+function getPDFPageSize(config) {
+  var pdf = config.pdf || {};
+  var orientation = (pdf.orientation || 'landscape').toLowerCase();
+  if (orientation === 'portrait') {
+    return { width: '210mm', height: '297mm' };
+  }
+  return { width: '297mm', height: '210mm' };
+}
+
+function setPDFExportState(config, isExporting, currentState) {
+  if (!isExporting) {
+    if (currentState && currentState.host && currentState.host.parentNode) {
+      currentState.host.parentNode.removeChild(currentState.host);
+    }
+    return null;
+  }
+
+  var sourceWrapper = document.querySelector('.certificate-wrapper');
+  var sourceCertificate = document.getElementById('certificate');
+  if (!sourceWrapper || !sourceCertificate) {
+    throw new Error('Certificate export target is missing.');
+  }
+
+  var wrapperRect = sourceWrapper.getBoundingClientRect();
+  var certRect = sourceCertificate.getBoundingClientRect();
+  var exportWidth = Math.ceil(wrapperRect.width);
+  var exportHeight = Math.ceil(certRect.height);
+
+  var host = document.createElement('div');
+  host.className = 'pdf-export-host';
+  host.style.setProperty('--pdf-export-width', exportWidth + 'px');
+  host.style.setProperty('--pdf-export-height', exportHeight + 'px');
+
+  var wrapper = sourceWrapper.cloneNode(true);
+  var certificate = wrapper.querySelector('#certificate') || wrapper.querySelector('.certificate');
+  if (certificate && certificate.id) {
+    certificate.id = 'certificate-export-clone';
+  }
+
+  host.appendChild(wrapper);
+  document.body.appendChild(host);
+
+  return {
+    host: host,
+    wrapper: wrapper,
+    certificate: certificate || wrapper
+  };
+}
+
+function isEmbeddedDownloadEnvironment() {
+  var userAgent = navigator.userAgent || '';
+  return userAgent.indexOf('Code/') !== -1 || userAgent.indexOf('Electron/') !== -1;
+}
+
+var activePDFBlobUrl = null;
+
+function revokeActivePDFBlobUrl() {
+  if (!activePDFBlobUrl) return;
+  URL.revokeObjectURL(activePDFBlobUrl);
+  activePDFBlobUrl = null;
+}
+
+function hidePDFDownloadHelp() {
+  var help = document.getElementById('pdf-download-help');
+  var helpText = document.getElementById('pdf-download-help-text');
+  var openLink = document.getElementById('pdf-open-link');
+
+  if (help) {
+    help.classList.add('hidden');
+  }
+
+  if (helpText) {
+    helpText.textContent = '';
+  }
+
+  if (openLink) {
+    openLink.setAttribute('href', '#');
+    openLink.removeAttribute('download');
+  }
+
+  revokeActivePDFBlobUrl();
+}
+
+function showPDFDownloadHelp(blobUrl, filename, openedInNewTab) {
+  var help = document.getElementById('pdf-download-help');
+  var helpText = document.getElementById('pdf-download-help-text');
+  var openLink = document.getElementById('pdf-open-link');
+
+  if (openLink) {
+    openLink.href = blobUrl;
+    openLink.setAttribute('download', filename);
+  }
+
+  if (helpText) {
+    helpText.textContent = openedInNewTab
+      ? 'PDF opened in a new tab. If it did not appear, use Open PDF and save it from the preview.'
+      : 'Direct downloads are limited in this browser. Use Open PDF, then save the file from the preview.';
+  }
+
+  if (help) {
+    help.classList.remove('hidden');
+  }
+}
+
+function getPDFPageSizeMM(config) {
+  var pdf = config.pdf || {};
+  var orientation = (pdf.orientation || 'landscape').toLowerCase();
+  if (orientation === 'portrait') {
+    return { width: 210, height: 297 };
+  }
+  return { width: 297, height: 210 };
+}
+
+function createPDFBlob(element, opt, config) {
+  var html2canvasFn = window.html2canvas;
+  var jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+  var pdf = config.pdf || {};
+
+  if (typeof html2canvasFn !== 'function' || typeof jsPDFCtor !== 'function') {
+    var fallbackOpt = Object.assign({}, opt, {
+      jsPDF: {
+        unit: 'mm',
+        format: pdf.format || 'a4',
+        orientation: pdf.orientation || 'landscape'
+      }
+    });
+
+    return html2pdf().set(fallbackOpt).from(element).toPdf().get('pdf').then(function (doc) {
+      return doc.output('blob');
+    });
+  }
+
+  return html2canvasFn(element, opt.html2canvas).then(function (canvas) {
+    var pageSize = getPDFPageSizeMM(config);
+    var imageType = (opt.image && opt.image.type === 'png') ? 'PNG' : 'JPEG';
+    var mimeType = imageType === 'PNG' ? 'image/png' : 'image/jpeg';
+    var quality = opt.image && typeof opt.image.quality === 'number' ? opt.image.quality : 0.98;
+
+    var doc = new jsPDFCtor({
+      unit: 'mm',
+      format: pdf.format || 'a4',
+      orientation: pdf.orientation || 'landscape',
+      compress: true
+    });
+
+    var imageData = canvas.toDataURL(mimeType, quality);
+    doc.addImage(imageData, imageType, 0, 0, pageSize.width, pageSize.height, undefined, 'FAST');
+    return doc.output('blob');
+  });
+}
+
+function triggerBlobDownload(blob, filename) {
+  var blobUrl = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.href = blobUrl;
+  link.download = filename;
+  link.rel = 'noopener';
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.setTimeout(function () {
+    URL.revokeObjectURL(blobUrl);
+  }, 1000);
+}
+
+function openBlobUrlInNewTab(blobUrl) {
+  var popup = window.open(blobUrl, '_blank', 'noopener');
+  return !!popup;
+}
+
+function deliverPDFBlob(blob, filename) {
+  if (isEmbeddedDownloadEnvironment()) {
+    hidePDFDownloadHelp();
+    activePDFBlobUrl = URL.createObjectURL(blob);
+    var openedInNewTab = openBlobUrlInNewTab(activePDFBlobUrl);
+    showPDFDownloadHelp(activePDFBlobUrl, filename, openedInNewTab);
+    return Promise.resolve();
+  }
+
+  hidePDFDownloadHelp();
+  triggerBlobDownload(blob, filename);
+  return Promise.resolve();
+}
+
 function wirePDFButton(config, certId) {
   var btn = document.getElementById('download-btn');
   if (!btn) return;
@@ -320,29 +505,51 @@ function wirePDFButton(config, certId) {
   var originalHTML = btn.innerHTML;
   var pdf          = config.pdf || {};
 
-  function restoreButton(noPrintNodes) {
-    noPrintNodes.forEach(function(el) { el.classList.remove('invisible'); });
-    btn.disabled = false;
-    btn.innerHTML = originalHTML;
-  }
-
   btn.addEventListener('click', function() {
     if (typeof html2pdf === 'undefined') {
       alert('PDF library is still loading. Please try again in a moment.');
       return;
     }
+
+    hidePDFDownloadHelp();
+
     btn.disabled    = true;
     btn.textContent = 'Generating\u2026';
 
-    var element  = document.getElementById('certificate');
-    var noPrint  = document.querySelectorAll('.no-print');
-    noPrint.forEach(function(el) { el.classList.add('invisible'); });
+    var exportTarget;
+
+    try {
+      exportTarget = setPDFExportState(config, true);
+    } catch (error) {
+      console.error('[PDF] export setup failed:', error);
+      btn.disabled = false;
+      btn.innerHTML = originalHTML;
+      alert('Could not prepare the certificate for download. Please reload and try again.');
+      return;
+    }
+
+    var certRect = exportTarget.certificate.getBoundingClientRect();
+    var exportWidth = Math.ceil(certRect.width);
+    var exportHeight = Math.ceil(certRect.height);
+
+    var filename = (pdf.filename_prefix || 'certificate') + '-' + certId + '.pdf';
 
     var opt = {
       margin:      pdf.margin != null ? pdf.margin : 0,
-      filename:    (pdf.filename_prefix || 'certificate') + '-' + certId + '.pdf',
+      filename:    filename,
+      pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] },
       image:       { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        width: exportWidth,
+        height: exportHeight,
+        windowWidth: exportWidth,
+        windowHeight: exportHeight,
+        scrollX: 0,
+        scrollY: 0
+      },
       jsPDF:       {
         unit:        'mm',
         format:      pdf.format      || 'a4',
@@ -350,19 +557,22 @@ function wirePDFButton(config, certId) {
       }
     };
 
-    html2pdf()
-      .set(opt)
-      .from(element)
-      .save()
-      .catch(function(err) {
-        console.error('[PDF] generation failed:', err);
+    window.requestAnimationFrame(function () {
+      createPDFBlob(exportTarget.certificate, opt, config).then(function (blob) {
+        return deliverPDFBlob(blob, filename);
+      }).catch(function (error) {
+        console.error('[PDF] generation failed:', error);
         alert('Failed to generate PDF. Please try again.');
-      })
-      .finally(function() {
-        restoreButton(noPrint);
+      }).finally(function () {
+        setPDFExportState(config, false, exportTarget);
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
       });
+    });
   });
 }
+
+window.addEventListener('beforeunload', revokeActivePDFBlobUrl);
 
 // ─── SEO Meta Tag Injection ───────────────────────────────────────────────────
 

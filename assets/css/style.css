@@ -363,6 +363,52 @@ body {
 .btn-download:active { transform: scale(0.97); }
 .btn-download:focus-visible { outline: 2px solid var(--cert-accent); outline-offset: 3px; }
 
+.pdf-download-help {
+  position: fixed;
+  top: 76px;
+  right: 20px;
+  z-index: 100;
+  width: min(320px, calc(100vw - 40px));
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgba(13, 27, 42, 0.96);
+  color: #ffffff;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+}
+
+.pdf-download-help-text {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.pdf-open-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: var(--cert-accent);
+  color: var(--cert-primary);
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+
+.pdf-open-link:hover {
+  background: #d9bb62;
+}
+
+.pdf-open-link:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
 /* ============================================================
    CERTIFICATE PAGE BACKDROP
    ============================================================ */
@@ -388,6 +434,35 @@ body {
   width: 100%;
   filter: drop-shadow(0 24px 64px rgba(0, 0, 0, 0.55));
   container-type: inline-size;
+}
+
+.pdf-export-host {
+  position: fixed;
+  top: 0;
+  left: -200vw;
+  z-index: -1;
+  width: var(--pdf-export-width, 297mm);
+  height: var(--pdf-export-height, 210mm);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.pdf-export-host .certificate-wrapper {
+  width: var(--pdf-export-width, 297mm);
+  max-width: none;
+  padding: 0;
+  margin: 0;
+  filter: none;
+}
+
+.pdf-export-host .certificate {
+  width: 100%;
+}
+
+.pdf-export-host .cert-heading-label {
+  line-height: 1;
+  position: relative;
+  top: -0.12cqw;
 }
 
 /* A4 landscape proportions — scales proportionally at every screen size */
@@ -649,6 +724,14 @@ body {
     width: calc(100% - 32px);
     justify-content: center;
     border-radius: 10px;
+  }
+
+  .pdf-download-help {
+    top: auto;
+    right: 16px;
+    bottom: 72px;
+    left: 16px;
+    width: auto;
   }
 
   /* Push certificate up so bottom button doesn't overlap */
