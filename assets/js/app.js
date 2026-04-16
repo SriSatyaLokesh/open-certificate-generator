@@ -322,6 +322,41 @@ function getPDFPageSize(config) {
   return { width: '297mm', height: '210mm' };
 }
 
+function getPDFPageSizePx(config) {
+  var pdf = config.pdf || {};
+  var orientation = (pdf.orientation || 'landscape').toLowerCase();
+  // A4 converted to CSS pixels at 96 DPI. Using a fixed export surface keeps
+  // PDF sharpness consistent regardless of current viewport size.
+  if (orientation === 'portrait') {
+    return { width: 794, height: 1123 };
+  }
+  return { width: 1123, height: 794 };
+}
+
+function getPDFRenderScale(config) {
+  var pdf = config.pdf || {};
+  var configuredScale = Number(pdf.scale);
+  if (!isNaN(configuredScale) && isFinite(configuredScale)) {
+    return Math.min(Math.max(configuredScale, 1), 4);
+  }
+  var dpr = window.devicePixelRatio || 1;
+  return Math.min(Math.max(dpr, 2), 4);
+}
+
+function waitForStablePDFFrame() {
+  var fontPromise = (document.fonts && typeof document.fonts.ready !== 'undefined')
+    ? document.fonts.ready.catch(function () { return null; })
+    : Promise.resolve();
+
+  return fontPromise.then(function () {
+    return new Promise(function (resolve) {
+      window.requestAnimationFrame(function () {
+        window.requestAnimationFrame(resolve);
+      });
+    });
+  });
+}
+
 function setPDFExportState(config, isExporting, currentState) {
   if (!isExporting) {
     if (currentState && currentState.host && currentState.host.parentNode) {
@@ -336,10 +371,9 @@ function setPDFExportState(config, isExporting, currentState) {
     throw new Error('Certificate export target is missing.');
   }
 
-  var wrapperRect = sourceWrapper.getBoundingClientRect();
-  var certRect = sourceCertificate.getBoundingClientRect();
-  var exportWidth = Math.ceil(wrapperRect.width);
-  var exportHeight = Math.ceil(certRect.height);
+  var pageSizePx = getPDFPageSizePx(config);
+  var exportWidth = pageSizePx.width;
+  var exportHeight = pageSizePx.height;
 
   var host = document.createElement('div');
   host.className = 'pdf-export-host';
@@ -449,7 +483,7 @@ function createPDFBlob(element, opt, config) {
     var pageSize = getPDFPageSizeMM(config);
     var imageType = (opt.image && opt.image.type === 'png') ? 'PNG' : 'JPEG';
     var mimeType = imageType === 'PNG' ? 'image/png' : 'image/jpeg';
-    var quality = opt.image && typeof opt.image.quality === 'number' ? opt.image.quality : 0.98;
+    var quality = opt.image && typeof opt.image.quality === 'number' ? opt.image.quality : 1;
 
     var doc = new jsPDFCtor({
       unit: 'mm',
@@ -459,7 +493,7 @@ function createPDFBlob(element, opt, config) {
     });
 
     var imageData = canvas.toDataURL(mimeType, quality);
-    doc.addImage(imageData, imageType, 0, 0, pageSize.width, pageSize.height, undefined, 'FAST');
+    doc.addImage(imageData, imageType, 0, 0, pageSize.width, pageSize.height, undefined, 'SLOW');
     return doc.output('blob');
   });
 }
@@ -531,6 +565,7 @@ function wirePDFButton(config, certId) {
     var certRect = exportTarget.certificate.getBoundingClientRect();
     var exportWidth = Math.ceil(certRect.width);
     var exportHeight = Math.ceil(certRect.height);
+    var renderScale = getPDFRenderScale(config);
 
     var filename = (pdf.filename_prefix || 'certificate') + '-' + certId + '.pdf';
 
@@ -538,9 +573,9 @@ function wirePDFButton(config, certId) {
       margin:      pdf.margin != null ? pdf.margin : 0,
       filename:    filename,
       pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] },
-      image:       { type: 'jpeg', quality: 0.98 },
+      image:       { type: 'png', quality: 1 },
       html2canvas: {
-        scale: 2,
+        scale: renderScale,
         useCORS: true,
         logging: false,
         width: exportWidth,
@@ -557,8 +592,9 @@ function wirePDFButton(config, certId) {
       }
     };
 
-    window.requestAnimationFrame(function () {
-      createPDFBlob(exportTarget.certificate, opt, config).then(function (blob) {
+    waitForStablePDFFrame().then(function () {
+      return createPDFBlob(exportTarget.certificate, opt, config);
+    }).then(function (blob) {
         return deliverPDFBlob(blob, filename);
       }).catch(function (error) {
         console.error('[PDF] generation failed:', error);
@@ -568,7 +604,6 @@ function wirePDFButton(config, certId) {
         btn.disabled = false;
         btn.innerHTML = originalHTML;
       });
-    });
   });
 }
 
