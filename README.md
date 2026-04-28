@@ -11,7 +11,8 @@
 
 **Zero backend · Zero cost · Zero build step**
 
-[**🎓 Live Demo →**](https://srisatyalokesh.github.io/certificate-generator/)
+[**🎓 Live Demo →**](https://srisatyalokesh.github.io/open-certificate-generator/)
+        Test email : jane.doe@example.com
 
 </div>
 
